@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Odyseus-Spatial VLM Demo</title>
+    <title>Blinkin VLM</title>
     <script type="importmap">
       {
         "imports": {
@@ -14,150 +14,565 @@
     <style>
       :root {
         color-scheme: dark;
-        --bg: #0d0f12;
-        --panel: #161a20;
-        --panel-2: #1f252d;
-        --border: #2c3440;
-        --text: #eef2f7;
-        --muted: #98a3b3;
-        --accent: #7cc7ff;
+        --bg: #050506;
+        --rail: #151518;
+        --panel: #0f0e11;
+        --panel-2: #17161a;
+        --panel-3: #222126;
+        --field: #151429;
+        --border: #2b2a30;
+        --border-strong: #3b3942;
+        --text: #f7f3f0;
+        --muted: #a6a2ad;
+        --muted-2: #73707a;
+        --accent: #6d45ff;
+        --accent-2: #8b5cff;
+        --cyan: #19dcff;
+        --error: #ff647c;
       }
 
       * {
         box-sizing: border-box;
       }
 
+      html,
+      body {
+        min-height: 100%;
+      }
+
       body {
         margin: 0;
         min-height: 100vh;
+        overflow: hidden;
         background: var(--bg);
         color: var(--text);
-        font: 14px/1.4 system-ui, sans-serif;
-      }
-
-      .app {
-        display: grid;
-        grid-template-columns: 340px 1fr;
-        min-height: 100vh;
-      }
-
-      .sidebar,
-      .viewer-wrap {
-        padding: 20px;
-      }
-
-      .sidebar {
-        border-right: 1px solid var(--border);
-        background: linear-gradient(180deg, #14181e 0%, #0f1317 100%);
+        font: 14px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
       h1,
       h2,
+      h3,
       p,
       pre {
         margin: 0;
       }
 
-      h1 {
-        font-size: 20px;
-        margin-bottom: 6px;
-      }
-
-      .muted {
-        color: var(--muted);
-      }
-
-      .stack {
-        display: grid;
-        gap: 14px;
-        margin-top: 18px;
-      }
-
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 14px;
-      }
-
-      label {
-        display: block;
-        font-size: 12px;
-        color: var(--muted);
-        margin-bottom: 6px;
-      }
-
+      button,
       input,
-      textarea,
-      button {
-        width: 100%;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: var(--panel-2);
-        color: var(--text);
-        padding: 10px 12px;
+      select,
+      textarea {
+        font: inherit;
       }
 
       button {
         cursor: pointer;
-        background: #243141;
-        border-color: #314153;
-        color: var(--accent);
-        font-weight: 600;
       }
 
-      textarea {
-        min-height: 84px;
-        resize: vertical;
-      }
-
-      .grid {
+      .app {
         display: grid;
-        gap: 10px;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 58px minmax(400px, 448px) minmax(300px, 328px) minmax(560px, 1fr);
+        gap: 20px;
+        height: 100vh;
+        padding: 20px 24px 20px 0;
+        background:
+          linear-gradient(90deg, rgba(87, 50, 255, 0.12), transparent 16%),
+          var(--bg);
       }
 
+      .rail {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        align-items: start;
+        justify-items: center;
+        min-width: 58px;
+        height: 100vh;
+        margin-top: -20px;
+        padding: 18px 6px 14px;
+        border-right: 1px solid #25242a;
+        background: var(--rail);
+      }
+
+      .brand-mark {
+        position: relative;
+        width: 34px;
+        height: 34px;
+      }
+
+      .brand-mark::before,
+      .brand-mark::after,
+      .brand-mark span {
+        position: absolute;
+        content: "";
+        border-radius: 999px;
+        background: #fbfbfb;
+      }
+
+      .brand-mark::before {
+        inset: 2px 2px 8px 10px;
+      }
+
+      .brand-mark::after {
+        inset: 10px 3px 2px 12px;
+      }
+
+      .brand-mark span {
+        inset: 7px 16px 7px 2px;
+        box-shadow: 0 -7px 0 -2px #fbfbfb, 0 7px 0 -2px #fbfbfb;
+      }
+
+      .rail-stack {
+        display: grid;
+        gap: 22px;
+        margin-top: 34px;
+      }
+
+      .rail-icon {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: #b8b4c0;
+      }
+
+      .rail-icon.is-active {
+        border-color: #4b238e;
+        background: #2a174b;
+        color: #9b6cff;
+      }
+
+      .rail-icon svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+      }
+
+      .rail-avatar {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 999px;
+        background: #8b3dff;
+        color: #100916;
+        font-weight: 800;
+      }
+
+      .panel-shell,
+      .scene-card,
+      .notice,
+      .overlay-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(15, 14, 17, 0.96);
+      }
+
+      .panel-shell {
+        min-height: 0;
+        overflow: auto;
+        padding: 20px;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      h1,
+      h2 {
+        color: var(--text);
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        min-height: 28px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(139, 92, 255, 0.45);
+        border-radius: 999px;
+        background: rgba(104, 52, 190, 0.34);
+        color: #9b65ff;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        padding: 0 13px;
+        text-transform: uppercase;
+      }
+
+      .workflow {
+        display: grid;
+        gap: 14px;
+      }
+
+      .mode-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        overflow: hidden;
+        border: 1px solid #323047;
+        border-radius: 7px;
+        background: #171529;
+      }
+
+      .mode-tab {
+        height: 30px;
+        border: 0;
+        background: transparent;
+        color: #f6f0ff;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .mode-tab.is-active {
+        background: #5b4cff;
+        color: #fff;
+      }
+
+      .section-card {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #151417;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 40px;
+        padding: 0 12px;
+        border-bottom: 1px solid #29272e;
+        color: #aaa6b1;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .section-body {
+        display: grid;
+        gap: 14px;
+        padding: 14px 12px;
+      }
+
+      .field-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: #b3afba;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .info-dot {
+        display: inline-grid;
+        width: 15px;
+        height: 15px;
+        place-items: center;
+        border: 1px solid #5e5a67;
+        border-radius: 999px;
+        color: #aaa4b1;
+        font-size: 10px;
+        line-height: 1;
+      }
+
+      .demo-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .demo-tile {
+        height: 132px;
+        overflow: hidden;
+        border: 1px solid #45424b;
+        border-radius: 8px;
+        background: #222126;
+        padding: 7px;
+      }
+
+      .demo-thumb {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 6px;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0 18%, transparent 18% 100%),
+          linear-gradient(90deg, #f4eee3 0 36%, #7ed1b2 36% 52%, #e0c14a 52% 68%, #d7dde3 68% 100%);
+      }
+
+      .demo-thumb.is-hallway {
+        background:
+          linear-gradient(88deg, rgba(13, 12, 10, 0.2), rgba(255, 255, 255, 0.2) 48%, rgba(5, 5, 5, 0.55)),
+          linear-gradient(90deg, #7f7657 0 22%, #464231 22% 40%, #f7e3b2 48% 58%, #2e2b23 70% 100%);
+      }
+
+      .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .drop-zone {
+        display: grid;
+        min-height: 92px;
+        place-items: center;
+        gap: 4px;
+        border: 2px dashed rgba(103, 91, 218, 0.7);
+        border-radius: 12px;
+        background: #242325;
+        color: #9f9aa5;
+        text-align: center;
+        padding: 16px;
+      }
+
+      .file-name {
+        color: var(--cyan);
+        font-weight: 800;
+      }
+
+      .upload-thumb,
+      .latest-thumb,
       .preview {
         width: 100%;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: #0b0d10;
-        object-fit: contain;
-        aspect-ratio: 1.2;
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        background: #070708;
+        object-fit: cover;
       }
 
       .upload-thumb {
+        max-height: 144px;
+        margin-top: 8px;
+      }
+
+      .upload-thumb[hidden],
+      .latest-thumb[hidden],
+      .preview[hidden],
+      .preview-placeholder[hidden] {
+        display: none;
+      }
+
+      .select,
+      .text-input,
+      .textarea {
         width: 100%;
-        height: 180px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: #0b0d10;
-        object-fit: contain;
-        margin-top: 12px;
+        border: 1px solid #343047;
+        border-radius: 7px;
+        background: var(--field);
+        color: #fff;
+        font-weight: 800;
+        outline: none;
+        padding: 10px 12px;
       }
 
-      .viewer-wrap {
+      .select {
+        height: 32px;
+      }
+
+      .text-input,
+      .textarea {
+        min-height: 38px;
+      }
+
+      .textarea {
+        resize: vertical;
+      }
+
+      .advanced-box {
         display: grid;
-        gap: 14px;
-        background: radial-gradient(circle at top, #161d26 0%, #0d0f12 55%);
+        gap: 12px;
+        border: 1px solid #353238;
+        border-radius: 8px;
+        background: #222124;
+        padding: 12px;
       }
 
-      #viewer {
-        min-height: 62vh;
-        border-radius: 16px;
+      .advanced-title {
+        display: flex;
+        justify-content: space-between;
+        color: #b1adb7;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .sync-button {
+        justify-self: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #6f4ac3;
+        border-radius: 8px;
+        background: #321b55;
+        color: white;
+        font-weight: 900;
+      }
+
+      .divider {
+        height: 1px;
+        background: #2c2a30;
+        margin: 16px 0 2px;
+      }
+
+      .primary-button {
+        width: 100%;
+        min-height: 36px;
+        border: 0;
+        border-radius: 8px;
+        background: #5b4cff;
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .primary-button:disabled {
+        cursor: wait;
+        opacity: 0.72;
+      }
+
+      .output-panel {
+        display: grid;
+        align-content: start;
+        gap: 14px;
+      }
+
+      .frame-card,
+      .metric-card,
+      .payload-card {
         border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #0b0b0c;
+      }
+
+      .frame-card {
+        display: grid;
+        gap: 9px;
+        padding: 14px 12px;
+      }
+
+      .frame-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #aaa5b0;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .progress-number {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .progress-track {
         overflow: hidden;
-        background: #090b0f;
+        height: 8px;
+        border-radius: 999px;
+        background: #323237;
+      }
+
+      .progress-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent-2), var(--cyan));
+        transition: width 220ms ease;
+      }
+
+      .caption {
+        color: #c4bfcb;
+        font-size: 12px;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .metric-card {
+        min-height: 52px;
+        padding: 10px;
+      }
+
+      .metric-label {
+        display: block;
+        color: #9d99a4;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .metric-value {
+        display: block;
+        margin-top: 4px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+      }
+
+      .payload-card {
+        overflow: hidden;
+      }
+
+      .payload-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 34px;
+        padding: 0 12px;
+        border-bottom: 1px solid #222126;
+        color: #aaa6b1;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
       pre {
+        max-height: 220px;
+        overflow: auto;
         white-space: pre-wrap;
-        color: #cfe0f5;
+        color: #f6f2ef;
+        font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        padding: 12px;
       }
 
       .target-list {
         display: grid;
         gap: 8px;
+        padding: 12px;
+        color: #f7f3f0;
+        font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       }
 
       .target-item {
@@ -165,9 +580,6 @@
         grid-template-columns: 12px 1fr;
         gap: 10px;
         align-items: start;
-        color: #cfe0f5;
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 12px;
       }
 
       .target-swatch {
@@ -177,64 +589,390 @@
         margin-top: 2px;
       }
 
-      @media (max-width: 980px) {
-        .app {
-          grid-template-columns: 1fr;
+      .scene-shell {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-width: 0;
+        min-height: 0;
+        gap: 14px;
+      }
+
+      .notice {
+        padding: 13px 16px;
+      }
+
+      .notice-title {
+        color: #a9a5b0;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .notice-text {
+        color: #d5d1d8;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .scene-card {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        background: #070613;
+      }
+
+      #viewer {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        background: #070613;
+      }
+
+      .canvas-label,
+      .overlay-label {
+        display: inline-flex;
+        align-items: center;
+        height: 22px;
+        border-radius: 4px;
+        background: rgba(3, 2, 7, 0.88);
+        color: #914dff;
+        font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        padding: 0 9px;
+        text-transform: uppercase;
+      }
+
+      .canvas-label {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 5;
+      }
+
+      .mesh-toggle {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        z-index: 5;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #2f2b39;
+        border-radius: 6px;
+        background: rgba(4, 3, 7, 0.84);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+        padding: 5px 8px;
+      }
+
+      .mesh-toggle input {
+        accent-color: var(--accent);
+      }
+
+      .overlay-stack {
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        z-index: 6;
+        display: grid;
+        width: min(360px, 32vw);
+        gap: 10px;
+      }
+
+      .overlay-card {
+        position: relative;
+        overflow: hidden;
+        background: rgba(4, 4, 5, 0.94);
+      }
+
+      .overlay-card.occupancy {
+        min-height: 236px;
+      }
+
+      .overlay-card.latest {
+        min-height: 190px;
+      }
+
+      .overlay-card .overlay-label {
+        position: absolute;
+        top: 10px;
+        left: 12px;
+        z-index: 2;
+      }
+
+      .overlay-caret {
+        position: absolute;
+        top: 9px;
+        right: 10px;
+        z-index: 2;
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border: 1px solid #45424c;
+        border-radius: 999px;
+        background: #050506;
+        color: #fff;
+        font-size: 14px;
+      }
+
+      .occupancy-placeholder,
+      .latest-placeholder,
+      .preview-placeholder {
+        display: grid;
+        place-items: center;
+        color: #aaa5b0;
+        text-align: center;
+      }
+
+      .occupancy-placeholder {
+        min-height: 236px;
+        font-size: 13px;
+      }
+
+      .latest-placeholder {
+        min-height: 190px;
+        padding: 20px;
+        font-size: 13px;
+      }
+
+      .latest-thumb {
+        display: block;
+        height: 260px;
+        border: 0;
+        border-radius: 0;
+      }
+
+      .debug-previews {
+        display: none;
+      }
+
+      @media (max-width: 1280px) {
+        body {
+          overflow: auto;
         }
 
-        .sidebar {
-          border-right: 0;
-          border-bottom: 1px solid var(--border);
+        .app {
+          grid-template-columns: 58px minmax(360px, 440px) minmax(300px, 1fr);
+          height: auto;
+          min-height: 100vh;
+        }
+
+        .scene-shell {
+          grid-column: 2 / -1;
+          min-height: 680px;
+        }
+      }
+
+      @media (max-width: 820px) {
+        .app {
+          grid-template-columns: 1fr;
+          padding: 14px;
+        }
+
+        .rail {
+          display: none;
+        }
+
+        .scene-shell {
+          grid-column: auto;
+        }
+
+        .overlay-stack {
+          position: static;
+          width: auto;
+          margin: 12px;
         }
       }
     </style>
   </head>
   <body>
     <div class="app">
-      <aside class="sidebar">
-        <h1>Odyseus-Spatial VLM Demo</h1>
-        <p class="muted">Upload one image, infer metric depth, project it into a point cloud, and inspect it in Three.js.</p>
+      <nav class="rail" aria-label="Blinkin VLM tools">
+        <div class="brand-mark" aria-label="Blinkin VLM"><span></span></div>
+        <div class="rail-stack">
+          <button class="rail-icon is-active" type="button" aria-label="Spatial reasoning">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c-4 1-7 4-8 8l-2 7 7-2c4-1 7-4 8-8l1-5-6 0Z"/><path d="M9 15l-3 3"/><path d="M14 4l6-2-2 6"/></svg>
+          </button>
+          <button class="rail-icon" type="button" aria-label="Preview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button class="rail-icon" type="button" aria-label="Targets">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="7" r="3"/><path d="M9.5 14.5l5-5"/></svg>
+          </button>
+        </div>
+        <div class="rail-avatar">T</div>
+      </nav>
 
-        <form id="demo-form" class="stack">
-          <div class="panel">
-            <label for="image">Image</label>
-            <input id="image" name="image" type="file" accept="image/*" required />
-            <img id="upload-preview" class="upload-thumb" alt="Upload preview" />
+      <aside class="panel-shell playground">
+        <div class="panel-head">
+          <h1>Session Playground</h1>
+          <span class="badge">Default</span>
+        </div>
+
+        <form id="demo-form" class="workflow">
+          <div class="mode-tabs" aria-label="Input mode">
+            <button class="mode-tab" type="button">Video</button>
+            <button class="mode-tab is-active" type="button">Image</button>
           </div>
 
-          <div class="panel">
-            <label for="prompt">Prompt</label>
-            <textarea id="prompt" name="prompt" placeholder="Example: select the chair I could sit on, the monitor on the desk, and the nearest door"></textarea>
-          </div>
+          <section class="section-card">
+            <div class="section-title"><span>1. Select Input</span><span>▼</span></div>
+            <div class="section-body">
+              <div>
+                <div class="field-label">Demo Images</div>
+                <div class="demo-grid" aria-hidden="true">
+                  <div class="demo-tile"><span class="demo-thumb"></span></div>
+                  <div class="demo-tile"><span class="demo-thumb is-hallway"></span></div>
+                </div>
+              </div>
+              <input id="image" class="file-input" name="image" type="file" accept="image/*" required />
+              <label class="drop-zone" for="image">
+                <span>Select or drop a local image file</span>
+                <span id="file-name" class="file-name">No file selected</span>
+                <img id="upload-preview" class="upload-thumb" alt="Selected image preview" hidden />
+              </label>
+            </div>
+          </section>
 
-          <button id="submit" type="submit">Run Demo</button>
+          <section class="section-card">
+            <div class="section-title"><span>2. Choose Point Cloud Model</span><span>▼</span></div>
+            <div class="section-body">
+              <label>
+                <span class="field-label">Point Cloud Model</span>
+                <select class="select" aria-label="Point cloud model">
+                  <option>Depth Anything V3</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <div class="section-title"><span>5. Select Your Robot</span><span>▼</span></div>
+            <div class="section-body">
+              <label>
+                <span class="field-label">Robot Type <span class="info-dot">i</span></span>
+                <select class="select" aria-label="Robot type">
+                  <option>Camera</option>
+                  <option>Rover</option>
+                </select>
+              </label>
+              <div class="advanced-box">
+                <div class="advanced-title"><span>Advanced Robot Customization (Optional)</span><span>▼</span></div>
+                <div class="two-col">
+                  <label>
+                    <span class="field-label">Robot Height (m) <span class="info-dot">i</span></span>
+                    <input class="text-input" value="0,10" aria-label="Robot height" />
+                  </label>
+                  <label>
+                    <span class="field-label">Robot Radius (m) <span class="info-dot">i</span></span>
+                    <input class="text-input" value="0,15" aria-label="Robot radius" />
+                  </label>
+                </div>
+                <button class="sync-button" type="button" aria-label="Link robot dimensions">↔</button>
+                <label>
+                  <span class="field-label">Camera Height (m) <span class="info-dot">i</span></span>
+                  <input class="text-input" value="0,05" aria-label="Camera height" />
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <div class="divider"></div>
+
+          <section class="section-card">
+            <div class="section-title"><span>4. Spatial Reasoning Prompt</span><span>▼</span></div>
+            <div class="section-body">
+              <label>
+                <span class="field-label">Prompt</span>
+                <textarea id="prompt" class="textarea" name="prompt" placeholder="detect the bike"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <button id="submit" class="primary-button" type="submit">Do Spatial Reasoning</button>
         </form>
+      </aside>
 
-        <div class="stack">
-          <div class="panel">
-            <label>Depth Preview</label>
-            <img id="depth-preview" class="preview" alt="Depth preview" />
+      <aside class="panel-shell output-panel">
+        <div class="panel-head">
+          <h2>Output Data</h2>
+          <span class="badge">Infer</span>
+        </div>
+
+        <section class="frame-card" aria-label="Frame processing status">
+          <div class="frame-head">
+            <span>Frame Processing</span>
+            <span id="progress-percent" class="progress-number">0%</span>
           </div>
-          <div class="panel">
-            <label>Prompt Targets</label>
-            <img id="annotated-preview" class="preview" alt="Annotated preview" />
+          <div class="progress-track" aria-hidden="true">
+            <div id="progress-fill" class="progress-fill"></div>
           </div>
-          <div class="panel">
-            <label>Status</label>
-            <pre id="status">Idle.</pre>
-          </div>
-          <div class="panel">
-            <label>Targets</label>
-            <div id="meta" class="target-list">No targets yet.</div>
-          </div>
+          <p id="progress-caption" class="caption">Idle, ready for frame processing</p>
+        </section>
+
+        <section class="metric-grid" aria-label="Run metrics">
+          <div class="metric-card"><span class="metric-label">Session ID</span><span id="session-id" class="metric-value">None</span></div>
+          <div class="metric-card"><span class="metric-label">Status</span><span id="run-state" class="metric-value">Idle</span></div>
+          <div class="metric-card"><span class="metric-label">Frame Processed</span><span id="frame-count" class="metric-value">0</span></div>
+          <div class="metric-card"><span class="metric-label">Source</span><span id="source-label" class="metric-value">local image</span></div>
+          <div class="metric-card"><span class="metric-label">Prompt</span><span id="prompt-state" class="metric-value">Unset</span></div>
+        </section>
+
+        <section class="payload-card">
+          <div class="payload-title"><span>Request Payload</span><span>▼</span></div>
+          <pre id="request-payload">{}</pre>
+        </section>
+
+        <section class="payload-card">
+          <div class="payload-title"><span>Response Payload</span><span>▼</span></div>
+          <pre id="response-payload">No infer response yet.</pre>
+        </section>
+
+        <section class="payload-card">
+          <div class="payload-title"><span>Targets</span><span>▼</span></div>
+          <div id="meta" class="target-list">No targets yet.</div>
+        </section>
+
+        <pre id="status" class="debug-previews">Idle.</pre>
+        <div class="debug-previews">
+          <img id="depth-preview" class="preview" alt="Depth map debug preview" hidden />
+          <div id="depth-placeholder" class="preview-placeholder">No scene yet.</div>
+          <img id="annotated-preview" class="preview" alt="Prompt target debug preview" hidden />
+          <div id="annotated-placeholder" class="preview-placeholder">No targets yet.</div>
         </div>
       </aside>
 
-      <main class="viewer-wrap">
-        <div id="viewer"></div>
+      <main class="scene-shell">
+        <section class="notice">
+          <div class="notice-title">Synthetic Run Outputs</div>
+          <p class="notice-text">The selected image is processed as a frame in the same SLAM session path used by live robot frames.</p>
+        </section>
+
+        <section class="scene-card">
+          <div id="viewer"></div>
+          <div class="canvas-label">Output - 3D SLAM</div>
+          <label class="mesh-toggle"><input type="checkbox" checked /> Mesh</label>
+          <div class="overlay-stack">
+            <section class="overlay-card occupancy">
+              <div class="overlay-label">Output - Occupancy</div>
+              <div class="overlay-caret">▼</div>
+              <div class="occupancy-placeholder">Occupancy Grid</div>
+            </section>
+            <section class="overlay-card latest">
+              <div class="overlay-label">Output - Latest Image</div>
+              <div class="overlay-caret">▼</div>
+              <img id="latest-preview" class="latest-thumb" alt="Latest input image" hidden />
+              <div id="latest-placeholder" class="latest-placeholder">Latest image appears here after selection.</div>
+            </section>
+          </div>
+        </section>
       </main>
     </div>
 
-    <script type="module" src="/index.js?v=3"></script>
+    <script type="module" src="/index.js?v=5"></script>
   </body>
 </html>

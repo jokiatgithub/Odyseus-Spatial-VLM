@@ -5,19 +5,37 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
   const form = document.getElementById("demo-form");
   const imageInput = document.getElementById("image");
   const uploadPreview = document.getElementById("upload-preview");
+  const latestPreview = document.getElementById("latest-preview");
+  const latestPlaceholder = document.getElementById("latest-placeholder");
+  const fileNameEl = document.getElementById("file-name");
   const depthPreview = document.getElementById("depth-preview");
+  const depthPlaceholder = document.getElementById("depth-placeholder");
   const annotatedPreview = document.getElementById("annotated-preview");
+  const annotatedPlaceholder = document.getElementById("annotated-placeholder");
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
   const viewerEl = document.getElementById("viewer");
   const submitButton = document.getElementById("submit");
   const promptInput = document.getElementById("prompt");
+  const progressPercent = document.getElementById("progress-percent");
+  const progressFill = document.getElementById("progress-fill");
+  const progressCaption = document.getElementById("progress-caption");
+  const sessionIdEl = document.getElementById("session-id");
+  const runStateEl = document.getElementById("run-state");
+  const frameCountEl = document.getElementById("frame-count");
+  const sourceLabelEl = document.getElementById("source-label");
+  const promptStateEl = document.getElementById("prompt-state");
+  const requestPayloadEl = document.getElementById("request-payload");
+  const responsePayloadEl = document.getElementById("response-payload");
 
   let previewUrl = null;
+  let activeSessionId = "None";
   let pointsObject = null;
   let markerData = [];
   let markerSpheres = [];
   let cameraGroup = null;
+
+  const PUBLIC_API_ORIGIN = "http://178.105.98.166:8080";
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x090b0f);
@@ -95,6 +113,171 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
     statusEl.textContent = text;
   }
 
+  function makeSessionId() {
+    if (window.crypto?.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+    return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+  }
+
+  function formatSessionId(sessionId) {
+    if (!sessionId || sessionId === "None") {
+      return "None";
+    }
+    return sessionId.replaceAll("-", "-\n");
+  }
+
+  function setProgress(percent, caption) {
+    progressPercent.textContent = `${percent}%`;
+    progressFill.style.width = `${percent}%`;
+    progressCaption.textContent = caption;
+  }
+
+  function setMetricState({ status, frameCount, source, promptState }) {
+    if (status !== undefined) runStateEl.textContent = status;
+    if (frameCount !== undefined) frameCountEl.textContent = String(frameCount);
+    if (source !== undefined) sourceLabelEl.textContent = source;
+    if (promptState !== undefined) promptStateEl.textContent = promptState;
+  }
+
+  function setPayload(el, payload) {
+    el.textContent = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+  }
+
+  let resolvedApiBase = null;
+
+  function apiUrl(base, path) {
+    return base ? `${base}${path}` : path;
+  }
+
+  async function resolveApiBase() {
+    if (resolvedApiBase !== null) {
+      return resolvedApiBase;
+    }
+
+    const candidates = ["", PUBLIC_API_ORIGIN];
+    const errors = [];
+    for (const base of [...new Set(candidates)]) {
+      const endpoint = apiUrl(base, "/healthz");
+      try {
+        const response = await fetch(endpoint, { cache: "no-store" });
+        if (response.ok) {
+          resolvedApiBase = base;
+          return resolvedApiBase;
+        }
+        errors.push(`${endpoint} -> HTTP ${response.status}`);
+      } catch (error) {
+        errors.push(`${endpoint} -> ${error}`);
+      }
+    }
+
+    throw new Error(
+      `Cannot reach the Blinkin VLM API from this browser page. Current page: ${window.location.href}. Tried: ${errors.join("; ")}`
+    );
+  }
+
+  async function apiFetch(path, options = {}) {
+    const base = await resolveApiBase();
+    return fetch(apiUrl(base, path), options);
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  async function runInferJob(formData) {
+    const createResponse = await apiFetch("/api/jobs", {
+      method: "POST",
+      body: formData,
+    });
+    const createPayload = await createResponse.json().catch(() => ({}));
+    if (!createResponse.ok) {
+      throw new Error(createPayload.detail || `Failed to create inference job (${createResponse.status}).`);
+    }
+
+    const jobId = createPayload.job_id;
+    setPayload(responsePayloadEl, {
+      job_id: jobId,
+      status: "queued",
+      message: "Single-image inference queued.",
+    });
+
+    for (let attempt = 0; attempt < 180; attempt += 1) {
+      await sleep(attempt < 4 ? 1000 : 2500);
+      const jobResponse = await apiFetch(`/api/jobs/${jobId}`, {
+        cache: "no-store",
+      });
+      const job = await jobResponse.json().catch(() => ({}));
+      if (!jobResponse.ok) {
+        throw new Error(job.detail || `Failed to read inference job (${jobResponse.status}).`);
+      }
+
+      if (job.status === "queued") {
+        setProgress(50, job.message || "Queued single-image inference");
+        setPayload(responsePayloadEl, job);
+        continue;
+      }
+
+      if (job.status === "running") {
+        setProgress(Math.min(95, 55 + attempt), job.message || "Running Blinkin VLM");
+        setPayload(responsePayloadEl, job);
+        continue;
+      }
+
+      if (job.status === "failed") {
+        throw new Error(job.error || "Inference failed.");
+      }
+
+      if (job.status === "succeeded") {
+        return job.result;
+      }
+    }
+
+    throw new Error("Inference job timed out while waiting for the remote model response.");
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (char) => {
+      const entities = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+      return entities[char];
+    });
+  }
+
+  function setPreviewImage(imageEl, placeholderEl, src, fallbackText) {
+    if (src) {
+      imageEl.src = src;
+      imageEl.hidden = false;
+      placeholderEl.hidden = true;
+      return;
+    }
+
+    imageEl.removeAttribute("src");
+    imageEl.hidden = true;
+    placeholderEl.textContent = fallbackText;
+    placeholderEl.hidden = false;
+  }
+
+  function setPreviewLoading(promptValue) {
+    setPreviewImage(depthPreview, depthPlaceholder, "", "Building scene...");
+    setPreviewImage(
+      annotatedPreview,
+      annotatedPlaceholder,
+      "",
+      promptValue ? "Locating targets..." : "No prompt targets."
+    );
+  }
+
+  function resetResultPreviews() {
+    setPreviewImage(depthPreview, depthPlaceholder, "", "No scene yet.");
+    setPreviewImage(annotatedPreview, annotatedPlaceholder, "", "No targets yet.");
+  }
+
   function renderTargetList(targets) {
     if (!targets.length) {
       metaEl.textContent = "No targets yet.";
@@ -107,7 +290,7 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
         return `
           <div class="target-item">
             <span class="target-swatch" style="background:${color}"></span>
-            <span>${target.label}  (${coords})</span>
+            <span>${escapeHtml(target.label)}  (${coords})</span>
           </div>
         `;
       })
@@ -402,7 +585,21 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
       URL.revokeObjectURL(previewUrl);
     }
     previewUrl = URL.createObjectURL(file);
+    fileNameEl.textContent = file.name;
     uploadPreview.src = previewUrl;
+    uploadPreview.hidden = false;
+    latestPreview.src = previewUrl;
+    latestPreview.hidden = false;
+    latestPlaceholder.hidden = true;
+    activeSessionId = makeSessionId();
+    sessionIdEl.textContent = formatSessionId(activeSessionId);
+    setMetricState({
+      status: "Image selected",
+      frameCount: 0,
+      source: "local image",
+      promptState: promptInput.value.trim() ? "Set" : "Unset",
+    });
+    setProgress(0, "Idle, ready for frame processing");
   });
 
   form.addEventListener("submit", async (event) => {
@@ -414,30 +611,59 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
       return;
     }
 
+    if (!previewUrl) {
+      previewUrl = URL.createObjectURL(file);
+    }
+
+    if (!activeSessionId || activeSessionId === "None") {
+      activeSessionId = makeSessionId();
+    }
+
     submitButton.disabled = true;
-    setStatus("Uploading image and running Depth Anything 3...");
+    setStatus("Running Blinkin VLM...");
     metaEl.textContent = "Running...";
+    resetPointCloud();
 
     const formData = new FormData();
     formData.append("image", file);
     const promptValue = promptInput.value.trim();
     formData.append("prompt", promptValue);
+    const requestPayload = {
+      prompt: promptValue || null,
+      file: file.name,
+      input_type: "image",
+      point_cloud_model: "depth-anything-v3",
+      max_dist: 50,
+      robot_height: 0.1,
+      robot_radius: 0.15,
+    };
+    sessionIdEl.textContent = formatSessionId(activeSessionId);
+    setMetricState({
+      status: "Uploading single image",
+      frameCount: 1,
+      source: "local image",
+      promptState: promptValue ? "Running" : "Unset",
+    });
+    setProgress(45, "Processing image: waiting for mesh and payload");
+    setPayload(requestPayloadEl, requestPayload);
+    setPayload(responsePayloadEl, "Opening single-image streams...");
+    setPreviewLoading(promptValue);
 
     try {
-      const response = await fetch("/api/infer", {
-        method: "POST",
-        body: formData,
-      });
+      const result = await runInferJob(formData);
 
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.detail || "Inference failed.");
-      }
-
-      depthPreview.src = `data:image/png;base64,${result.depth_preview}`;
-      annotatedPreview.src = result.annotated_preview
-        ? `data:image/png;base64,${result.annotated_preview}`
-        : "";
+      setPreviewImage(
+        depthPreview,
+        depthPlaceholder,
+        result.depth_preview ? `data:image/png;base64,${result.depth_preview}` : "",
+        "Scene unavailable."
+      );
+      setPreviewImage(
+        annotatedPreview,
+        annotatedPlaceholder,
+        result.annotated_preview ? `data:image/png;base64,${result.annotated_preview}` : "",
+        result.meta?.target_error ? "Targets unavailable." : "No targets found."
+      );
       const targets = (result.targets_3d || []).map((target, index) => ({
         ...target,
         colorIndex: index,
@@ -446,13 +672,50 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
       loadPointCloud(result.points, result.colors);
       updateMarkers(targets);
       updateCameraContext(targets);
+      const targetError = result.meta.target_error;
+      setProgress(100, "Image processed: mesh and payload ready");
+      setMetricState({
+        status: targetError ? "Target error" : "ok",
+        frameCount: 1,
+        source: "single-infer",
+        promptState: targetError ? "error" : promptValue ? "ok" : "Unset",
+      });
+      setPayload(responsePayloadEl, {
+        single_infer: true,
+        session_id: activeSessionId,
+        max_depth_m: result.meta.depth_far_m,
+        status: targetError ? "target_error" : "ok",
+        objective_status: targetError ? "pending" : "complete",
+        slam: {
+          status: "ok",
+          frames_processed: 1,
+          has_mesh: Boolean(result.points?.length),
+        },
+        objects: targets.map((target) => ({
+          label: target.label,
+          confidence: target.confidence,
+          pixel: target.pixel,
+          position: target.position,
+        })),
+        error: targetError || null,
+      });
       setStatus(
-        `Rendered ${result.meta.point_count} points and ${result.meta.target_count || 0} prompt targets.`
+        targetError
+          ? `Rendered ${result.meta.point_count} points. ${targetError}`
+          : `Rendered ${result.meta.point_count} points and ${result.meta.target_count || 0} prompt targets.`
       );
     } catch (error) {
       setStatus(String(error));
       metaEl.textContent = "No targets yet.";
-      annotatedPreview.src = "";
+      setProgress(0, "Frame processing failed");
+      setMetricState({
+        status: "error",
+        frameCount: 0,
+        source: "local image",
+        promptState: "error",
+      });
+      setPayload(responsePayloadEl, { status: "error", error: String(error) });
+      resetResultPreviews();
       resetPointCloud();
     } finally {
       submitButton.disabled = false;

@@ -1,0 +1,29 @@
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Build and runtime output
+build/
+dist/
+*.egg-info/
+logs/
+outputs/
+tmp/
+
+# Node/browser artifacts
+node_modules/
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/

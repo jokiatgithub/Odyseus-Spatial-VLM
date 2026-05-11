@@ -1,5 +1,5 @@
 param(
-  [string]$EnvName = "odyseus-vlm",
+  [string]$EnvName = "blinkin-vlm",
   [string]$QwenUrl = "http://127.0.0.1:8012/v1",
   [string]$Model = "Qwen/Qwen3-VL-8B-Instruct",
   [string]$GpuUtil = "0.7",

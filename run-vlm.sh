@@ -4,12 +4,12 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${ENV_FILE:-$REPO_DIR/.env.vlm}"
-ENV_NAME="${VLM_ENV_NAME:-odyseus-vlm}"
+ENV_NAME="${VLM_ENV_NAME:-blinkin-vlm}"
 SERVICE="${VLM_SERVICE_NAME:-vllm}"
 SESSION_NAME="${TMUX_SESSION_NAME:-$(basename "$REPO_DIR")-${SERVICE}}"
 LOG_DIR="${LOG_DIR:-$HOME/logs/$(basename "$REPO_DIR")}"
 LOG_FILE="${LOG_FILE:-$LOG_DIR/${SERVICE}.log}"
-REGISTRY="${REGISTRY:-$HOME/odyseus_registry.txt}"
+REGISTRY="${REGISTRY:-$HOME/blinkin_vlm_registry.txt}"
 MODEL_NAME="${VLM_MODEL:-Qwen/Qwen3-VL-8B-Instruct}"
 HOST="${HOST:-0.0.0.0}"
 

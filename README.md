@@ -1,13 +1,11 @@
-# Odyseus Spatial VLM
+# Blinkin VLM
 
-![LLM vs Spatial-VLM](https://github.com/MercuriusTech/Odyseus-Spatial-VLM/blob/main/media/SpatialVLM-demo2-low-res.gif)
+![Blinkin VLM demo](media/SpatialVLM-demo2-low-res.gif)
 
-I've been recently fascinated by the possibilites provided by recent advancements in monocular depth estimation models and decided to expeirment combining them with a capable VLM, so below is an example demo to get 3D outputs from a VLM that can be more useful for a physical AI agent.
+Blinkin VLM combines monocular depth estimation with a vision-language model to turn an uploaded image and natural-language prompt into a 3D point-cloud view with labeled targets.
 
 
-Quick Live Demo 👉 [app.odyseus.xyz](https://app.odyseus.xyz)
-
-Or follow the setup on this repo for custom deployment
+Follow the setup below for custom deployment.
 
 ## Setup
 
@@ -16,8 +14,8 @@ This repo is currently set up primarily for Linux.
 If you clone this as a git repo, prefer pulling the external DA3 dependency as a submodule:
 
 ```bash
-git clone --recurse-submodules https://github.com/MercuriusTech/Odyseus-Spatial-VLM.git
-cd spatial-vlm
+git clone --recurse-submodules <repo-url>
+cd <repo-folder>
 ```
 
 If you already cloned without submodules:

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_NAME="${1:-${VLM_ENV_NAME:-odyseus-vlm}}"
+ENV_NAME="${1:-${VLM_ENV_NAME:-blinkin-vlm}}"
 PYTHON_VERSION="${PYTHON_VERSION:-3.10}"
 TORCH_INDEX_URL="${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}"
 TORCH_VERSION="${TORCH_VERSION:-2.5.1}"
@@ -31,7 +31,7 @@ QWEN_URL=http://127.0.0.1:8012/v1
 GPU_UTIL=0.7
 MAX_MODEL_LEN=16384
 VLM_MODEL=Qwen/Qwen3-VL-8B-Instruct
-VLM_ENV_NAME=odyseus-vlm
+VLM_ENV_NAME=blinkin-vlm
 EOF
 fi
 
