@@ -36,6 +36,11 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
   let cameraGroup = null;
 
   const PUBLIC_API_ORIGIN = "http://178.105.98.166:8080";
+  const POINT_CLOUD_POINT_SIZE = 0.034;
+  const POINT_CLOUD_CAMERA_DISTANCE = 1.9;
+  const POINT_COLOR_EXPOSURE = 1.08;
+  const POINT_COLOR_SATURATION = 1.32;
+  const POINT_COLOR_GAMMA = 0.88;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x090b0f);
@@ -51,6 +56,8 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(viewerEl.clientWidth, Math.max(viewerEl.clientHeight, 1));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.NoToneMapping;
   viewerEl.appendChild(renderer.domElement);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -329,6 +336,25 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
     return MARKER_COLORS[base] || TARGET_PALETTE[colorIndex % TARGET_PALETTE.length];
   }
 
+  function clamp01(value) {
+    return Math.min(1, Math.max(0, value));
+  }
+
+  function gradePointColors(colors) {
+    const graded = [];
+    for (const color of colors) {
+      const [r, g, b] = color;
+      const luma = r * 0.2126 + g * 0.7152 + b * 0.0722;
+      const channels = [r, g, b];
+      for (const channel of channels) {
+        const saturated = luma + (channel - luma) * POINT_COLOR_SATURATION;
+        const exposed = Math.pow(clamp01(saturated), POINT_COLOR_GAMMA) * POINT_COLOR_EXPOSURE;
+        graded.push(clamp01(exposed));
+      }
+    }
+    return graded;
+  }
+
   function createTextSprite(text, color, subtitle) {
     const canvas = document.createElement("canvas");
     const width = 256;
@@ -545,11 +571,11 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
     );
     geometry.setAttribute(
       "color",
-      new THREE.Float32BufferAttribute(colors.flat(), 3)
+      new THREE.Float32BufferAttribute(gradePointColors(colors), 3)
     );
 
     const material = new THREE.PointsMaterial({
-      size: 0.025,
+      size: POINT_CLOUD_POINT_SIZE,
       vertexColors: true,
       sizeAttenuation: true,
     });
@@ -568,7 +594,7 @@ import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/cont
     camera.position.set(
       sphere.center.x,
       sphere.center.y,
-      sphere.center.z + radius * 2.4
+      sphere.center.z + radius * POINT_CLOUD_CAMERA_DISTANCE
     );
     camera.near = Math.max(radius / 500, 0.01);
     camera.far = Math.max(radius * 20, 100);
